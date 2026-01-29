@@ -93,6 +93,9 @@ Desktop.ini
 # Spring Boot / application
 # -----------------------------------------------------------------------------
 
+# Docker Compose local overrides (do not commit secrets or local ports)
+.env
+
 # Local config (e.g. application-local.yml with secrets)
 application-local.yml
 application-local.yaml

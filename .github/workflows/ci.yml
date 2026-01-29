@@ -10,7 +10,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # 1. Initialization
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -19,5 +21,24 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      - name: Build with Gradle
-        run: ./gradlew build --no-daemon
+      # 2. Virus scan (before build and run)
+      - name: Virus scan (ClamAV)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clamav
+          sudo systemctl stop clamav-freshclam clamav-daemon 2>/dev/null || true
+          printf 'UpdateLogFile /tmp/freshclam.log\n' | sudo tee /tmp/freshclam-ci.conf > /dev/null
+          sudo freshclam --config-file=/etc/clamav/freshclam.conf --config-file=/tmp/freshclam-ci.conf || true
+          clamscan -r --exclude-dir=".git" --exclude-dir=".gradle" --exclude-dir="build" .
+
+      # 3. Clean
+      - name: Clean
+        run: ./gradlew clean --no-daemon
+
+      # 4. Build (without tests)
+      - name: Build
+        run: ./gradlew build -x test --no-daemon
+
+      # 5. Test
+      - name: Test
+        run: ./gradlew test --no-daemon
